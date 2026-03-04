@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Download, Printer } from 'lucide-react';
 
 // 🔥 URL a la que redirige el QR — ajusta el dominio a tu entorno
-const QR_URL = 'http://localhost:5173/appointments';
+const QR_URL = 'https://barber-front-three.vercel.app/appointments';
 
 const StaticQRView = () => {
   const navigate = useNavigate();
