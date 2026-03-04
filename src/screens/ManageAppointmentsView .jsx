@@ -16,7 +16,6 @@ const ManageAppointmentsView = () => {
     { id: 'all',       label: 'Todas'       },
     { id: 'pending',   label: 'Pendientes'  },
     { id: 'completed', label: 'Completadas' },
-    { id: 'cancelled', label: 'Canceladas'  }
   ];
 
   const getFilterCategory = (apt) => {
