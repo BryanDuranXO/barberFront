@@ -7,9 +7,16 @@ const DashboardView = () => {
   const navigate = useNavigate();
   const hasCargado = useRef(false);
 
-  const today = new Date().toISOString().split('T')[0];
-console.log(today); // 2026-02-01
+  // ✅ Usa hora local en lugar de UTC para evitar desfase de un día
+  const getLocalDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
+  const today = getLocalDateString();
 
   const [stats, setStats] = useState({
     citasHoy: 0,
@@ -28,7 +35,6 @@ console.log(today); // 2026-02-01
         return;
       }
 
-      // Hacer las 4 peticiones en paralelo
       const [barberosRes, citasHoyRes, pendientesRes, completadasRes] = await Promise.all([
         axios.get('https://barberback-1qs2.onrender.com/api/barber/usuarios/rol/2', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -70,9 +76,9 @@ console.log(today); // 2026-02-01
   }, []);
 
   const cards = [
-    { icon: Calendar, label: 'Citas Hoy', value: stats.citasHoy, onclick: () => navigate('/manage-appointments?filter=today')  },
-    { icon: Clock, label: 'Pendientes', value: stats.pendientes, onclick: () => navigate('/manage-appointments?filter=pending')  },
-    { icon: Users, label: 'Barberos', value: stats.barberos , onclick: () => navigate('/employees') },
+    { icon: Calendar, label: 'Citas Hoy', value: stats.citasHoy, onclick: () => navigate('/manage-appointments?filter=today') },
+    { icon: Clock, label: 'Pendientes', value: stats.pendientes, onclick: () => navigate('/manage-appointments?filter=pending') },
+    { icon: Users, label: 'Barberos', value: stats.barberos, onclick: () => navigate('/employees') },
     { icon: CheckCircle, label: 'Completadas', value: stats.completadas, onclick: () => navigate('/manage-appointments?filter=completed') }
   ];
 
