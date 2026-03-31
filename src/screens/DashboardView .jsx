@@ -28,38 +28,40 @@ const DashboardView = () => {
   const cargarDashboard = async () => {
     try {
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
         console.error('❌ No hay token, redirigiendo al login');
         navigate('/login');
         return;
       }
 
-      const [barberosRes, citasHoyRes, pendientesRes, completadasRes] = await Promise.all([
+      // ✅ Solo 2 peticiones: barberos + todas las citas del día
+      // Pendientes y completadas se calculan del mismo listado del día
+      const [barberosRes, citasHoyRes] = await Promise.all([
         axios.get('https://barberback-1qs2.onrender.com/api/barber/usuarios/rol/2', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get(`https://barberback-1qs2.onrender.com/api/barber/citas/fecha/${today}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        axios.get('https://barberback-1qs2.onrender.com/api/barber/citas/status/false', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        axios.get('https://barberback-1qs2.onrender.com/api/barber/citas/status/true', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         })
       ]);
 
+      const citasDelDia = citasHoyRes.data.data || [];
+
+      // ✅ Conteo local — misma lógica que ManageAppointmentsView
+      const completadas = citasDelDia.filter(apt => apt.escaneada).length;
+      const pendientes  = citasDelDia.filter(apt => !apt.escaneada && !apt.status).length;
+
       setStats({
-        barberos: barberosRes.data.total || 0,
-        citasHoy: citasHoyRes.data.total || 0,
-        pendientes: pendientesRes.data.total || 0,
-        completadas: completadasRes.data.total || 0
+        barberos:   barberosRes.data.total || 0,
+        citasHoy:   citasDelDia.length,
+        pendientes,
+        completadas,
       });
 
     } catch (error) {
       console.error('❌ Error cargando dashboard:', error);
-      
+
       if (error.response?.status === 403 || error.response?.status === 401) {
         console.error('❌ Token inválido, redirigiendo al login');
         localStorage.removeItem('token');
@@ -71,15 +73,14 @@ const DashboardView = () => {
   useEffect(() => {
     if (hasCargado.current) return;
     hasCargado.current = true;
-    
     cargarDashboard();
   }, []);
 
   const cards = [
-    { icon: Calendar, label: 'Citas Hoy', value: stats.citasHoy, onclick: () => navigate('/manage-appointments?filter=today') },
-    { icon: Clock, label: 'Pendientes', value: stats.pendientes, onclick: () => navigate('/manage-appointments?filter=pending') },
-    { icon: Users, label: 'Barberos', value: stats.barberos, onclick: () => navigate('/employees') },
-    { icon: CheckCircle, label: 'Completadas', value: stats.completadas, onclick: () => navigate('/manage-appointments?filter=completed') }
+    { icon: Calendar,    label: 'Citas Hoy',  value: stats.citasHoy,   onclick: () => navigate('/manage-appointments?filter=today')     },
+    { icon: Clock,       label: 'Pendientes', value: stats.pendientes,  onclick: () => navigate('/manage-appointments?filter=pending')   },
+    { icon: Users,       label: 'Barberos',   value: stats.barberos,   onclick: () => navigate('/employees')                            },
+    { icon: CheckCircle, label: 'Completadas',value: stats.completadas, onclick: () => navigate('/manage-appointments?filter=completed') }
   ];
 
   return (
@@ -96,13 +97,11 @@ const DashboardView = () => {
               <div
                 onClick={stat.onclick}
                 key={index}
-                className="bg-white rounded-lg p-4 border-2 border-yellow-500/40 shadow-md"
+                className="bg-white rounded-lg p-4 border-2 border-yellow-500/40 shadow-md cursor-pointer active:scale-95 transition-transform"
               >
                 <Icon className="w-8 h-8 text-yellow-500 mb-2" />
                 <p className="text-gray-600 text-sm">{stat.label}</p>
-                <p className="text-2xl font-bold text-black">
-                  {stat.value}
-                </p>
+                <p className="text-2xl font-bold text-black">{stat.value}</p>
               </div>
             );
           })}
