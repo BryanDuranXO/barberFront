@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 const AppointmentsView = () => {
   const navigate = useNavigate();
   const hasCargado = useRef(false);
-  
+
   const [formData, setFormData] = useState({
     nombre: '',
     paterno: '',
@@ -18,16 +18,13 @@ const AppointmentsView = () => {
     servicios: ''
   });
 
-  const [barberos, setBarberos] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Calcular monto automáticamente basado en el servicio seleccionado
-  const monto = formData.servicios 
-    ? servicios.find(s => s.servicio === formData.servicios)?.precio || 0 
+  const monto = formData.servicios
+    ? servicios.find(s => s.servicio === formData.servicios)?.precio || 0
     : 0;
 
-  // Cargar barberos y servicios al montar el componente
   useEffect(() => {
     if (hasCargado.current) return;
     hasCargado.current = true;
@@ -35,22 +32,15 @@ const AppointmentsView = () => {
   }, []);
 
   const cargarDatos = async () => {
-    await Promise.all([
-      cargarServicios()
-    ]);
+    await Promise.all([cargarServicios()]);
   };
 
   const cargarServicios = async () => {
     try {
       const response = await axios.get('https://barberback-1qs2.onrender.com/api/servicios/', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-
-      console.log('✅ Servicios cargados:', response.data);
       setServicios(response.data.data || []);
-      
     } catch (error) {
       console.error('❌ Error cargando servicios:', error);
     }
@@ -62,7 +52,6 @@ const AppointmentsView = () => {
 
     try {
       const token = localStorage.getItem('token');
-      
       if (!token) {
         navigate('/login');
         return;
@@ -80,13 +69,11 @@ const AppointmentsView = () => {
         monto: monto
       };
 
-      console.log('📤 Enviando datos:', datosEnviar);
-
       const response = await axios.post(
         'https://barberback-1qs2.onrender.com/api/barber/citas/',
         datosEnviar,
         {
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
@@ -94,9 +81,6 @@ const AppointmentsView = () => {
         }
       );
 
-      console.log('✅ Cita creada, QR recibido');
-
-      // 🔥 Alerta de éxito antes de navegar al QR
       await Swal.fire({
         title: '¡Cita confirmada!',
         text: 'Tu cita fue agendada correctamente. A continuación verás tu código QR.',
@@ -106,21 +90,13 @@ const AppointmentsView = () => {
         background: '#fff',
       });
 
-      // Convertir el blob a una URL que podemos mostrar
       const qrImageUrl = URL.createObjectURL(response.data);
-      
-      // Navegar a la vista de QR con la URL de la imagen
-      navigate('/QRGenerated', { 
-        state: { 
-          qrImageUrl: qrImageUrl,
-          citaData: datosEnviar
-        } 
+      navigate('/QRGenerated', {
+        state: { qrImageUrl, citaData: datosEnviar }
       });
-      
+
     } catch (error) {
       console.error('❌ Error creando cita:', error);
-
-      // 🔥 Alerta de error mejorada con Swal
       Swal.fire({
         title: 'Error al agendar',
         text: error.response?.data?.message || 'Ocurrió un error al crear la cita. Intenta de nuevo.',
@@ -135,169 +111,226 @@ const AppointmentsView = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const getLocalDateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const inputClass =
+    'w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-black placeholder-gray-400 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/20 focus:bg-white transition-all duration-200';
+
+  const labelClass = 'block text-gray-600 mb-1.5 text-xs font-semibold uppercase tracking-wide';
+
+  const horarios = [
+    '09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30',
+    '13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00'
+  ];
+
   return (
-    <div className="min-h-screen bg-white">
-      <div className="p-4 pt-20">
-        <h2 className="text-2xl font-bold text-black mb-6">Agendar Cita</h2>
-        
-        <div className="bg-white rounded-lg p-4 border-2 border-yellow-500/40 shadow-lg mb-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-lg mx-auto px-4 pt-20 pb-10">
+
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="h-1 w-8 bg-yellow-500 rounded-full" />
+            <span className="text-yellow-500 text-xs font-bold uppercase tracking-widest">Reserva</span>
+          </div>
+          <h2 className="text-3xl font-black text-black">Agendar Cita</h2>
+          <p className="text-gray-500 text-sm mt-1">Completa los datos para reservar tu turno</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-yellow-500/30 shadow-sm overflow-hidden">
+
+          {/* Franja decorativa superior */}
+          <div className="h-1.5 w-full bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-300" />
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+
+            {/* Sección: Datos personales */}
             <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
-                Nombre
-              </label>
-              <input 
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-                className="w-full bg-gray-50 border border-gray-300 rounded px-4 py-3 text-black focus:border-yellow-500 focus:outline-none focus:bg-white"
-                placeholder="Nombre"
-                required
-              />
+              <h3 className="text-xs font-bold uppercase tracking-widest text-yellow-600 mb-4 flex items-center gap-2">
+                <span className="inline-block w-4 h-px bg-yellow-400" />
+                Datos personales
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className={labelClass}>Nombre</label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={handleChange}
+                    className={inputClass}
+                    placeholder="Ej. Carlos"
+                    required
+                  />
+                </div>
+
+                {/* Apellidos en fila */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Ap. Paterno</label>
+                    <input
+                      type="text"
+                      name="paterno"
+                      value={formData.paterno}
+                      onChange={handleChange}
+                      className={inputClass}
+                      placeholder="Ej. García"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Ap. Materno</label>
+                    <input
+                      type="text"
+                      name="materno"
+                      value={formData.materno}
+                      onChange={handleChange}
+                      className={inputClass}
+                      placeholder="Ej. López"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Teléfono</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">+52</span>
+                    <input
+                      type="tel"
+                      name="telefono"
+                      value={formData.telefono}
+                      onChange={handleChange}
+                      className={`${inputClass} pl-14`}
+                      placeholder="10 dígitos"
+                      pattern="[0-9]{10}"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
-                Apellido Paterno
-              </label>
-              <input 
-                type="text"
-                name="paterno"
-                value={formData.paterno}
-                onChange={handleChange}
-                className="w-full bg-gray-50 border border-gray-300 rounded px-4 py-3 text-black focus:border-yellow-500 focus:outline-none focus:bg-white"
-                placeholder="Apellido paterno"
-                required
-              />
-            </div>
+            {/* Divisor */}
+            <div className="border-t border-dashed border-gray-200" />
 
+            {/* Sección: Servicio */}
             <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
-                Apellido Materno
-              </label>
-              <input 
-                type="text"
-                name="materno"
-                value={formData.materno}
-                onChange={handleChange}
-                className="w-full bg-gray-50 border border-gray-300 rounded px-4 py-3 text-black focus:border-yellow-500 focus:outline-none focus:bg-white"
-                placeholder="Apellido materno"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
-                Teléfono
-              </label>
-              <input 
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                className="w-full bg-gray-50 border border-gray-300 rounded px-4 py-3 text-black focus:border-yellow-500 focus:outline-none focus:bg-white"
-                placeholder="10 dígitos"
-                pattern="[0-9]{10}"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-yellow-600 mb-4 flex items-center gap-2">
+                <span className="inline-block w-4 h-px bg-yellow-400" />
                 Servicio
-              </label>
-              <select 
-                name="servicios"
-                value={formData.servicios}
-                onChange={handleChange}
-                className="w-full bg-gray-50 border border-gray-300 rounded px-4 py-3 text-black focus:border-yellow-500 focus:outline-none focus:bg-white"
-                required
-              >
-                <option value="">Selecciona un servicio</option>
-                {servicios.length > 0 ? (
-                  servicios.map((servicio) => (
-                    <option key={servicio.id} value={servicio.servicio}>
-                      {servicio.servicio} - ${servicio.precio.toFixed(2)}
-                    </option>
-                  ))
-                ) : (
-                  <option disabled>Cargando servicios...</option>
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className={labelClass}>Tipo de servicio</label>
+                  <select
+                    name="servicios"
+                    value={formData.servicios}
+                    onChange={handleChange}
+                    className={inputClass}
+                    required
+                  >
+                    <option value="">Selecciona un servicio</option>
+                    {servicios.length > 0 ? (
+                      servicios.map((servicio) => (
+                        <option key={servicio.id} value={servicio.servicio}>
+                          {servicio.servicio} — ${servicio.precio.toFixed(2)}
+                        </option>
+                      ))
+                    ) : (
+                      <option disabled>Cargando servicios...</option>
+                    )}
+                  </select>
+                </div>
+
+                {/* Monto destacado — solo aparece si hay servicio seleccionado */}
+                {monto > 0 && (
+                  <div className="flex items-center justify-between bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
+                    <span className="text-sm text-gray-600 font-medium">Total a pagar</span>
+                    <span className="text-2xl font-black text-yellow-600">${monto.toFixed(2)}</span>
+                  </div>
                 )}
-              </select>
+              </div>
             </div>
 
+            {/* Divisor */}
+            <div className="border-t border-dashed border-gray-200" />
+
+            {/* Sección: Fecha y hora */}
             <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
-                Monto Total
-              </label>
-              <input 
-                type="text"
-                value={`$${monto.toFixed(2)}`}
-                className="w-full bg-gray-100 border border-gray-300 rounded px-4 py-3 text-black font-bold"
-                disabled
-              />
+              <h3 className="text-xs font-bold uppercase tracking-widest text-yellow-600 mb-4 flex items-center gap-2">
+                <span className="inline-block w-4 h-px bg-yellow-400" />
+                Fecha y hora
+              </h3>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelClass}>Fecha</label>
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={formData.fecha}
+                    onChange={handleChange}
+                    min={getLocalDateString()}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Hora</label>
+                  <select
+                    name="hora"
+                    value={formData.hora}
+                    onChange={handleChange}
+                    className={inputClass}
+                    required
+                  >
+                    {horarios.map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
-            
-            <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
-                Fecha
-              </label>
-              <input 
-                type="date"
-                name="fecha"
-                value={formData.fecha}
-                onChange={handleChange}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-gray-50 border border-gray-300 rounded px-4 py-3 text-black focus:border-yellow-500 focus:outline-none focus:bg-white"
-                required
-              />
-            </div>
-            
-            <div>
-              <label className="block text-gray-700 mb-2 text-sm font-medium">
-                Hora
-              </label>
-              <select 
-                name="hora"
-                value={formData.hora}
-                onChange={handleChange}
-                className="w-full bg-gray-50 border border-gray-300 rounded px-4 py-3 text-black focus:border-yellow-500 focus:outline-none focus:bg-white"
-                required
-              >
-                <option value="09:00">09:00</option>
-                <option value="09:30">09:30</option>
-                <option value="10:00">10:00</option>
-                <option value="10:30">10:30</option>
-                <option value="11:00">11:00</option>
-                <option value="11:30">11:30</option>
-                <option value="12:00">12:00</option>
-                <option value="12:30">12:30</option>
-                <option value="14:00">14:00</option>
-                <option value="14:30">14:30</option>
-                <option value="15:00">15:00</option>
-                <option value="15:30">15:30</option>
-                <option value="16:00">16:00</option>
-                <option value="16:30">16:30</option>
-                <option value="17:00">17:00</option>
-                <option value="17:30">17:30</option>
-                <option value="18:00">18:00</option>
-              </select>
-            </div>
-            
-            <button 
+
+            {/* Botón de envío */}
+            <button
               type="submit"
               disabled={loading}
-              className={`w-full ${loading ? 'bg-yellow-300' : 'bg-yellow-500 hover:bg-yellow-600'} text-black font-bold py-3 rounded transition-colors shadow-md`}
+              className={`
+                w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest
+                transition-all duration-200 shadow-md
+                ${loading
+                  ? 'bg-yellow-200 text-yellow-600 cursor-not-allowed'
+                  : 'bg-yellow-500 hover:bg-yellow-400 active:scale-[0.98] text-black hover:shadow-lg'
+                }
+              `}
             >
-              {loading ? 'PROCESANDO...' : 'CONFIRMAR Y GENERAR QR'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                  </svg>
+                  Procesando...
+                </span>
+              ) : (
+                'Confirmar y Generar QR'
+              )}
             </button>
+
           </form>
         </div>
       </div>

@@ -44,11 +44,6 @@ console.log(today); // 2026-02-01
         })
       ]);
 
-      console.log('✅ Barberos:', barberosRes.data);
-      console.log('✅ Citas hoy:', citasHoyRes.data);
-      console.log('✅ Pendientes:', pendientesRes.data);
-      console.log('✅ Completadas:', completadasRes.data);
-
       setStats({
         barberos: barberosRes.data.total || 0,
         citasHoy: citasHoyRes.data.total || 0,
@@ -75,10 +70,10 @@ console.log(today); // 2026-02-01
   }, []);
 
   const cards = [
-    { icon: Calendar, label: 'Citas Hoy', value: stats.citasHoy },
-    { icon: Clock, label: 'Pendientes', value: stats.pendientes },
-    { icon: Users, label: 'Barberos', value: stats.barberos },
-    { icon: CheckCircle, label: 'Completadas', value: stats.completadas }
+    { icon: Calendar, label: 'Citas Hoy', value: stats.citasHoy, onclick: () => navigate('/manage-appointments?filter=today')  },
+    { icon: Clock, label: 'Pendientes', value: stats.pendientes, onclick: () => navigate('/manage-appointments?filter=pending')  },
+    { icon: Users, label: 'Barberos', value: stats.barberos , onclick: () => navigate('/employees') },
+    { icon: CheckCircle, label: 'Completadas', value: stats.completadas, onclick: () => navigate('/manage-appointments?filter=completed') }
   ];
 
   return (
@@ -93,6 +88,7 @@ console.log(today); // 2026-02-01
             const Icon = stat.icon;
             return (
               <div
+                onClick={stat.onclick}
                 key={index}
                 className="bg-white rounded-lg p-4 border-2 border-yellow-500/40 shadow-md"
               >
